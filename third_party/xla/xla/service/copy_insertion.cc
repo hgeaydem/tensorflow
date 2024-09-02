@@ -2303,6 +2303,7 @@ absl::Status CopyInsertion::RemoveUnnecessaryCopies(
     changed = false;
     VLOG(2) << "Running fixpoint iteration " << num_iterations
             << " of copy elision";
+    std::vector<HloInstruction*> to_be_removed_copies;
     for (HloComputation* computation :
          module->computations(execution_threads)) {
       VLOG(2) << "computation:" << computation->name();
@@ -2322,6 +2323,8 @@ absl::Status CopyInsertion::RemoveUnnecessaryCopies(
           TF_RETURN_IF_ERROR(StripControlDependenciesFrom(instruction));
           TF_RETURN_IF_ERROR(
               instruction->ReplaceAllUsesWith(instruction->mutable_operand(0)));
+          CHECK(instruction->users().empty());
+          to_be_removed_copies.push_back(instruction);
           VLOG(6) << "succeeded in eliminating copy.";
         }
         if (allowance.ContinueAnalysis() && region_analysis_cost_now > 0) {
@@ -2333,7 +2336,13 @@ absl::Status CopyInsertion::RemoveUnnecessaryCopies(
         }
       }
     }
+
+    // Remove copies from IR to avoid redundant iterations.
+    for (HloInstruction* it : to_be_removed_copies) {
+      TF_RETURN_IF_ERROR(it->parent()->RemoveInstruction(it));
+    }
   }
+
   return absl::OkStatus();
 }
 
