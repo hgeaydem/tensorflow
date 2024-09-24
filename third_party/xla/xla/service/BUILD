@@ -2866,6 +2866,7 @@ xla_cc_test(
     srcs = ["algebraic_simplifier_test.cc"],
     deps = [
         ":algebraic_simplifier",
+        ":hlo_constant_folding",
         ":hlo_creation_utils",
         ":hlo_parser",
         ":host_memory_offload_annotations_hdr",

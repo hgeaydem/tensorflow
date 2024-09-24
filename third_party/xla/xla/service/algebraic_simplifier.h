@@ -296,6 +296,12 @@ class AlgebraicSimplifierOptions {
     return disable_dynamic_slice_to_slice_conversion_;
   }
 
+  // Option to set finite math.
+  void set_enable_finite_math(bool enable_finite_math) {
+    enable_finite_math_ = enable_finite_math;
+  }
+  bool enable_finite_math() const { return enable_finite_math_; }
+
  private:
   // Metadata struct can be used to store any metadata information encapsulated
   // with the AlgebraicSimplifierOptions that can be later used in an
@@ -335,6 +341,7 @@ class AlgebraicSimplifierOptions {
   double raise_slice_and_reduce_through_dot_threshold_{2.0};
   bool use_convert_constant_folding_{false};
   bool disable_dynamic_slice_to_slice_conversion_{false};
+  bool enable_finite_math_{false};
   Metadata metadata_;
 };
 
@@ -405,6 +412,8 @@ class AlgebraicSimplifierVisitor : public DfsHloRewriteVisitor {
   absl::Status HandleComplex(HloInstruction* complex) override;
 
   absl::Status HandleCustomCall(HloInstruction* custom_call) override;
+
+  absl::Status HandleExp(HloInstruction* exp) override;
 
   absl::Status HandleReal(HloInstruction* real) override;
 
