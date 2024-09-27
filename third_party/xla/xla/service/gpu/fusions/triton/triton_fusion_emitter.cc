@@ -115,6 +115,7 @@ limitations under the License.
 #include "xla/service/gpu/fusions/mlir/elemental_hlo_to_mlir.h"
 #include "xla/service/gpu/fusions/transforms/passes.h"
 #include "xla/service/gpu/fusions/triton/passes.h"
+#include "xla/service/gpu/fusions/triton/triton_support.h"
 #include "xla/service/gpu/hlo_traversal.h"
 #include "xla/service/gpu/ir_emission_utils.h"
 #include "xla/service/gpu/launch_dimensions.h"
@@ -1063,6 +1064,11 @@ absl::StatusOr<Value> EmitTiledHloInstruction(
     mlir::triton::FuncOp fn, ValueRange tile_multi_index,
     absl::flat_hash_map<const TiledHloInstruction*, Value>& values) {
   const HloInstruction* hlo = tiled_hlo.hlo();
+
+  if (!IsSupported0DTensor(*hlo, /*is_within_reduction_computation=*/false)) {
+    return absl::InternalError(
+        absl::StrCat("Unsupported 0D tensor: ", hlo->ToString()));
+  }
 
   if (fusion->IsUserOf(hlo)) {
     TF_ASSIGN_OR_RETURN(auto make_tensor,

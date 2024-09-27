@@ -217,7 +217,8 @@ bool IsTritonSupportedElementwise(HloOpcode opcode, PrimitiveType element_type,
 }
 
 CodegenDecision IsTritonSupportedInstructionImpl(
-    const HloInstruction& instr, const se::GpuComputeCapability& gpu_version);
+    const HloInstruction& instr, const se::GpuComputeCapability& gpu_version,
+    bool is_within_reduction_computation);
 
 // Filters Reduces which can be handled using Triton.
 CodegenDecision CanTritonHandleReduce(
@@ -231,7 +232,10 @@ CodegenDecision CanTritonHandleReduce(
 
   bool is_triton_supported_reduction_computation = absl::c_all_of(
       reduce.to_apply()->instructions(), [&](const HloInstruction* instr) {
-        return IsTritonSupportedInstructionImpl(*instr, gpu_version).CanFuse();
+        return IsTritonSupportedInstructionImpl(
+                   *instr, gpu_version,
+                   /*is_within_reduction_computation=*/true)
+            .CanFuse();
       });
   if (!is_triton_supported_reduction_computation) {
     return CodegenDecision::Forbid(
@@ -246,9 +250,14 @@ CodegenDecision CanTritonHandleReduce(
 }
 
 CodegenDecision IsTritonSupportedInstructionImpl(
-    const HloInstruction& instr, const se::GpuComputeCapability& gpu_version) {
+    const HloInstruction& instr, const se::GpuComputeCapability& gpu_version,
+    bool is_within_reduction_computation) {
   if (internal::IsTritonUnsupportedOpcode(instr.opcode())) {
     return CodegenDecision::Forbid("Unsupported opcode.");
+  }
+
+  if (!IsSupported0DTensor(instr, is_within_reduction_computation)) {
+    return CodegenDecision::Forbid("Unsupported 0D tensor");
   }
 
   // Special handling for the kConvert instruction, which has a non-standard
@@ -416,8 +425,8 @@ absl::Status EnsureTritonSupportsComputeCapability(
 
 CodegenDecision IsTritonSupportedInstruction(
     const HloInstruction& instr, const se::GpuComputeCapability& gpu_version) {
-  CodegenDecision decision =
-      IsTritonSupportedInstructionImpl(instr, gpu_version);
+  CodegenDecision decision = IsTritonSupportedInstructionImpl(
+      instr, gpu_version, /*is_within_reduction_computation=*/false);
   VLOG(2) << "IsTritonSupportedInstruction: " << instr.ToString() << " "
           << bool(decision);
   return decision;
@@ -431,6 +440,18 @@ bool IsTritonFusedComputation(const HloComputation& computation) {
          fusion->backend_config<gpu::GpuBackendConfig>()
                  ->fusion_backend_config()
                  .kind() == kTritonGemmFusionKind;
+}
+
+bool IsSupported0DTensor(const HloInstruction& instr,
+                         bool is_within_reduction_computation) {
+  return is_within_reduction_computation || !instr.shape().IsArray() ||
+         instr.shape().rank() != 0 || instr.opcode() == HloOpcode::kConstant ||
+         instr.opcode() == HloOpcode::kParameter ||
+         instr.opcode() == HloOpcode::kReshape ||
+         instr.opcode() == HloOpcode::kBitcast ||
+         (instr.opcode() == HloOpcode::kConvert &&
+          (instr.operand(0)->opcode() == HloOpcode::kConstant ||
+           instr.operand(0)->opcode() == HloOpcode::kParameter));
 }
 
 }  // namespace gpu
