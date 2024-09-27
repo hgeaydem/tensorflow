@@ -126,6 +126,7 @@ class PyClient {
 
   std::vector<nb_class_ptr<PyDevice>> Devices();
   std::vector<nb_class_ptr<PyDevice>> LocalDevices();
+  std::vector<nb_class_ptr<PyDevice>> GetAllDevices();
   absl::StatusOr<nb_class_ptr<PyDevice>> DeviceFromLocalHardwareId(
       int local_hardware_id);
 
