@@ -15,20 +15,31 @@ limitations under the License.
 
 #include "tensorflow/compiler/mlir/tensorflow/utils/bridge_logger.h"
 
+#include <algorithm>
 #include <atomic>
+#include <cctype>
+#include <cstdlib>
 #include <memory>
 #include <string>
 #include <vector>
 
+#include "absl/log/log.h"
 #include "absl/strings/str_split.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/FormatVariadic.h"
+#include "llvm/Support/raw_ostream.h"
 #include "mlir/IR/Operation.h"  // from @llvm-project
 #include "mlir/IR/OperationSupport.h"  // from @llvm-project
 #include "mlir/Pass/Pass.h"  // from @llvm-project
+#include "mlir/Pass/PassManager.h"  // from @llvm-project
 #include "tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.h"
 
 namespace tensorflow {
+
+constexpr char kPassFilterEnvVar[] = "MLIR_BRIDGE_LOG_PASS_FILTER";
+constexpr char kStringFilterEnvVar[] = "MLIR_BRIDGE_LOG_STRING_FILTER";
+constexpr char kEnableOnlyTopLevelPassesEnvVar[] =
+    "MLIR_BRIDGE_LOG_ENABLE_ONLY_TOP_LEVEL_PASSES";
 
 // Counter is used as a prefix for filenames.
 static std::atomic<int> log_counter(0);
@@ -39,8 +50,9 @@ BridgeLoggerConfig::BridgeLoggerConfig(bool print_module_scope,
     : mlir::PassManager::IRPrinterConfig(
           print_module_scope, print_after_only_on_change,
           /*printAfterOnlyOnFailure=*/false, op_printing_flags),
-      pass_filter_(GetFilter("MLIR_BRIDGE_LOG_PASS_FILTER")),
-      string_filter_(GetFilter("MLIR_BRIDGE_LOG_STRING_FILTER")) {}
+      pass_filter_(GetFilter(kPassFilterEnvVar)),
+      string_filter_(GetFilter(kStringFilterEnvVar)),
+      enable_only_top_level_passes_(GetEnableOnlyTopLevelPasses()) {}
 
 // Logs op to file with name of format
 // `<log_counter>_mlir_bridge_<pass_name>_<file_suffix>.mlir`.
@@ -83,6 +95,14 @@ std::vector<std::string> BridgeLoggerConfig::GetFilter(
   return filter;
 }
 
+bool BridgeLoggerConfig::GetEnableOnlyTopLevelPasses() {
+  const char* env_var = getenv(kEnableOnlyTopLevelPassesEnvVar);
+  if (!env_var) return false;
+  std::string value(env_var);
+  std::transform(value.begin(), value.end(), value.begin(), ::tolower);
+  return (value == "1" || value == "true" || value == "yes");
+}
+
 bool BridgeLoggerConfig::MatchesFilter(const std::string& str,
                                        const std::vector<std::string>& filter,
                                        bool exact_match) {
@@ -103,6 +123,16 @@ bool BridgeLoggerConfig::ShouldPrint(mlir::Pass* pass, mlir::Operation* op) {
             << "` because the pass name does not match any string in "
                "`MLIR_BRIDGE_LOG_PASS_FILTER`";
     return false;
+  }
+  if (enable_only_top_level_passes_) {
+    // Check if the operation is the top-level module.
+    // Top-level module has no parent.
+    if (op->getParentOp() != nullptr) {
+      // This is a nested operation; do not print.
+      VLOG(1) << "Not logging invocation of pass `" << pass_name
+              << "` because it is applied to a nested operation.";
+      return false;
+    }
   }
   if (!string_filter_.empty()) {
     std::string serialized_op;
