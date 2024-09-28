@@ -17,6 +17,12 @@ COPY builder.devtoolset/build_devtoolset.sh /build_devtoolset.sh
 COPY builder.devtoolset/glibc2.17-inline.patch /glibc2.17-inline.patch
 RUN /build_devtoolset.sh devtoolset-9 /dt9
 
+# Setup Python
+ARG PYTHON_VERSION=3.10
+COPY setup.python.sh /setup.python.sh
+COPY builder.requirements.txt /builder.requirements.txt
+RUN /setup.python.sh $PYTHON_VERSION builder.requirements.txt
+
 # Make sure clang is on the path
 RUN ln -s /usr/lib/llvm-18/bin/clang /usr/bin/clang
 
