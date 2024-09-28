@@ -24,6 +24,7 @@ limitations under the License.
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/match.h"
 #include "absl/strings/string_view.h"
 #include "xla/hlo/ir/dfs_hlo_visitor_with_default.h"
 #include "xla/hlo/ir/hlo_instruction.h"
@@ -32,6 +33,7 @@ limitations under the License.
 #include "xla/service/call_graph.h"
 #include "xla/service/hlo_dce.h"
 #include "xla/service/hlo_domain_isolator.h"
+#include "xla/service/spmd/shardy/constants.h"
 #include "xla/status_macros.h"
 #include "xla/util.h"
 #include "tsl/platform/errors.h"
@@ -133,6 +135,22 @@ class SubcomputationInsertionVisitor : public DfsHloVisitorWithDefault {
   CallInliner::InlinedInstructionMap subcomputation_hlo_to_new_hlo_;
 };
 
+// Specific inlining rules when needing to round-trip from MLIR->HLO->MLIR when
+// using Shardy (github.com/openxla/shardy).
+//
+// - shmap_body: We don't want to inline the bodies of JAX shard maps in order
+//   to import them into an `sdy.ManualComputationOp`. This is for the MHLO
+//   round-trip pipeline
+// - kManualComputationBodyFuncName: Same as shmap_body except for the SDY
+//   round-trip pipeline.
+bool InlineUnderShardy(HloInstruction* instruction) {
+  return !(instruction->GetModule()->config().use_shardy_partitioner() &&
+           (absl::StrContains(instruction->to_apply()->name(), "shmap_body") ||
+            absl::StartsWith(
+                instruction->to_apply()->name(),
+                std::string_view(sdy::kManualComputationBodyFuncName))));
+}
+
 }  // namespace
 
 /* static */ absl::StatusOr<CallInliner::InlinedInstructionMap>
@@ -161,7 +179,8 @@ CallInliner::Inline(HloInstruction* call) {
 bool CallInliner::IsInlineableCallOp(HloInstruction* instruction) const {
   return instruction->opcode() == HloOpcode::kCall &&
          !instruction->has_backend_config() &&
-         !instruction->parent()->IsAsyncComputation();
+         !instruction->parent()->IsAsyncComputation() &&
+         InlineUnderShardy(instruction);
 }
 
 absl::StatusOr<bool> CallInliner::Run(
