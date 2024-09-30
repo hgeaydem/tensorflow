@@ -72,6 +72,7 @@ limitations under the License.
 #include "xla/client/xla_computation.h"
 #include "xla/comparison_util.h"
 #include "xla/debug_options_flags.h"
+#include "xla/hlo/builder/xla_builder.h"
 #include "xla/hlo/ir/dynamic_parameter_binding.h"
 #include "xla/hlo/ir/hlo_module.h"
 #include "xla/hlo/ir/hlo_opcode.h"
@@ -3524,6 +3525,8 @@ LogicalResult ConvertToHloModule::Lower(
 LogicalResult ConvertToHloModule::LowerFunctionCall(
     mlir::func::CallOp call_op, xla::XlaBuilder* builder,
     ConvertToHloModule::ValueLoweringMap* value_lowering) {
+  xla::XlaScopedShardingAssignment scoped_sharding(
+      builder, CreateOpShardingFromAttribute(call_op));
   auto& value_map = *value_lowering;
   mlir::func::FuncOp callee =
       module_.lookupSymbol<mlir::func::FuncOp>(call_op.getCallee());
@@ -3541,10 +3544,30 @@ LogicalResult ConvertToHloModule::LowerFunctionCall(
   // callees, but eventually before lowering call graph is "flattened" to
   // make that true. This is done before lowering because buffer assignment
   // needs this invariant.
+  // Remove the backend_config from the frontend attributes.
+  auto frontend_attrs =
+      call_op->getAttrOfType<mlir::DictionaryAttr>(kMhloFrontendAttributes);
+  if (frontend_attrs) {
+    SmallVector<mlir::NamedAttribute, 4> frontend_attrs_vector;
+    for (auto named_attr : frontend_attrs) {
+      if (named_attr.getName() == kBackendConfig) {
+        continue;
+      }
+      frontend_attrs_vector.push_back(named_attr);
+    }
+    call_op->setAttr(kMhloFrontendAttributes,
+                     mlir::DictionaryAttr::get(call_op->getContext(),
+                                               frontend_attrs_vector));
+  }
   xla::FrontendAttributes fe_attrs = CreateXlaFrontendAttributesFromOp(call_op);
   xla::XlaScopedFrontendAttributesAssignment assignment(builder, fe_attrs);
-  xla::XlaOp call_result =
-      xla::Call(builder, lowered_computation_[callee], operands);
+  std::string backend_config = "";
+  if (frontend_attrs && frontend_attrs.contains(kBackendConfig)) {
+    backend_config =
+        mlir::cast<mlir::StringAttr>(frontend_attrs.get(kBackendConfig)).str();
+  }
+  xla::XlaOp call_result = xla::CallWithBackendConfig(
+      builder, lowered_computation_[callee], operands, backend_config);
   // Use GetTupleElement for multiple outputs
   unsigned num_results = call_op.getNumResults();
   if (num_results > 1) {
@@ -3619,10 +3642,9 @@ LogicalResult ConvertToHloModule::RunOnFunction(mlir::func::FuncOp f) {
     // means no replication. This avoids the need for unrelated tests to handle
     // this field.
     if (!any_arg_replicated) entry_args_same_across_replicas.clear();
-
-    ExtractShardingsFromFunction(f, &arg_shardings, &ret_shardings);
     ExtractFrontendAttributesFromFunction(f, &arg_fe_attrs);
   }
+  ExtractShardingsFromFunction(f, &arg_shardings, &ret_shardings);
   if (failed(LowerBasicBlockAsFunction(&f.front(), &builder, entry_function,
                                        false, entry_args_same_across_replicas,
                                        arg_shardings, ret_shardings,
