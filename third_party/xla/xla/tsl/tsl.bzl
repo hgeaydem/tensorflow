@@ -88,7 +88,7 @@ def if_cuda_or_rocm(if_true, if_false = []):
       """
     return select({
         "@local_config_cuda//cuda:using_nvcc": if_true,
-        "@local_config_cuda//cuda:using_clang": if_true,
+        "@local_config_cuda//cuda:using_config_cuda": if_true,
         "@local_config_rocm//rocm:using_hipcc": if_true,
         "//conditions:default": if_false,
     })

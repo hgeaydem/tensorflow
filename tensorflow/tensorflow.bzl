@@ -1672,7 +1672,7 @@ def tf_gpu_cc_test(
             # TODO(allenl): Remove Mac static linking when Bazel 0.6 is out.
             clean_dep("//tensorflow:macos"): 1,
             "@local_config_cuda//cuda:using_nvcc": 1,
-            "@local_config_cuda//cuda:using_clang": 1,
+            "@local_config_cuda//cuda:using_config_cuda": 1,
             "//conditions:default": 0,
         }),
         suffix = "_gpu",
@@ -1700,7 +1700,7 @@ def tf_gpu_cc_test(
                 # TODO(allenl): Remove Mac static linking when Bazel 0.6 is out.
                 clean_dep("//tensorflow:macos"): 1,
                 "@local_config_cuda//cuda:using_nvcc": 1,
-                "@local_config_cuda//cuda:using_clang": 1,
+                "@local_config_cuda//cuda:using_config_cuda": 1,
                 "//conditions:default": 0,
             }),
             suffix = "_2gpu",
@@ -1907,7 +1907,7 @@ def _cuda_copts(opts = []):
             "-nvcc_options=relaxed-constexpr",
             "-nvcc_options=ftz=true",
         ] + opts,
-        "@local_config_cuda//cuda:using_clang": [
+        "@local_config_cuda//cuda:using_config_cuda": [
             "-fcuda-flush-denormals-to-zero",
         ] + opts,
     })
