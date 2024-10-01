@@ -2571,6 +2571,7 @@ cc_library(
     srcs = ["triangular_solve_expander.cc"],
     hdrs = ["triangular_solve_expander.h"],
     deps = [
+        ":hlo_creation_utils",
         ":hlo_module_config",
         ":op_expander_pass",
         "//xla:shape_util",
@@ -2613,6 +2614,7 @@ cc_library(
     srcs = ["cholesky_expander.cc"],
     hdrs = ["cholesky_expander.h"],
     deps = [
+        ":hlo_creation_utils",
         ":op_expander_pass",
         "//xla:literal",
         "//xla:shape_util",
@@ -2636,6 +2638,7 @@ cc_library(
     srcs = ["qr_expander.cc"],
     hdrs = ["qr_expander.h"],
     deps = [
+        ":hlo_creation_utils",
         ":op_expander_pass",
         "//xla:literal",
         "//xla:shape_util",
@@ -2691,6 +2694,7 @@ cc_library(
     srcs = ["eigh_expander.cc"],
     hdrs = ["eigh_expander.h"],
     deps = [
+        ":hlo_creation_utils",
         ":op_expander_pass",
         "//xla:literal_util",
         "//xla:shape_util",
@@ -3067,6 +3071,7 @@ cc_library(
     srcs = ["bitcast_dtypes_expander.cc"],
     hdrs = ["bitcast_dtypes_expander.h"],
     deps = [
+        ":hlo_creation_utils",
         ":hlo_module_config",
         ":op_expander_pass",
         "//xla:literal_util",
@@ -5916,6 +5921,7 @@ cc_library(
         "//xla:xla_data_proto_cc",
         "@com_google_absl//absl/status:statusor",
         "@llvm-project//llvm:Core",
+        "@llvm-project//llvm:Support",
         "@local_tsl//tsl/platform:statusor",
     ],
 )
@@ -5970,22 +5976,21 @@ xla_test(
     deps = [
         ":elemental_ir_emitter",
         ":hlo_module_config",
-        ":hlo_parser",
         "//xla:error_spec",
-        "//xla:execution_options_util",
         "//xla:literal",
         "//xla:literal_util",
-        "//xla:status_macros",
         "//xla:test",
+        "//xla:types",
         "//xla/hlo/ir:hlo",
         "//xla/service/llvm_ir:ir_array",
-        "//xla/tests:client_library_test_base",
         "//xla/tests:hlo_test_base",
         "//xla/tests:test_macros_header",
         "//xla/tests:xla_internal_test_main",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
+        "@com_google_googletest//:gtest_main",
         "@llvm-project//llvm:ir_headers",
+        "@local_tsl//tsl/platform:ml_dtypes",
         "@local_tsl//tsl/platform:statusor",
     ],
 )
@@ -7476,6 +7481,7 @@ cc_library(
     srcs = ["rng_bit_generator_expander.cc"],
     hdrs = ["rng_bit_generator_expander.h"],
     deps = [
+        ":hlo_creation_utils",
         ":op_expander_pass",
         "//xla:shape_util",
         "//xla:util",
@@ -7590,6 +7596,7 @@ cc_library(
     srcs = ["topk_rewriter.cc"],
     hdrs = ["topk_rewriter.h"],
     deps = [
+        ":hlo_creation_utils",
         ":pattern_matcher",
         "//xla:shape_util",
         "//xla:util",
