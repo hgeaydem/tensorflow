@@ -23,6 +23,7 @@ limitations under the License.
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/statusor.h"
@@ -1061,6 +1062,67 @@ ENTRY wais {
 
 INSTANTIATE_TEST_SUITE_P(GemmFusionAutotunerConfigSweep,
                          GemmFusionAutotunerConfigTest, ::testing::Bool());
+
+TEST_F(StatelessAutotunerTest,
+       ExhaustiveAutotuningTunesNumberOfCtasFromHopper) {
+  const std::string kHloText = R"(
+HloModule test
+
+ENTRY main {
+  lhs = f32[5,1600] parameter(0)
+  rhs = f32[1600,10] parameter(1)
+  ROOT dot = f32[5,10] dot(lhs, rhs),
+      lhs_contracting_dims={1}, rhs_contracting_dims={0}
+})";
+  TF_ASSERT_OK_AND_ASSIGN(auto module, ParseAndReturnVerifiedModule(kHloText));
+  DebugOptions debug_options_with_exhaustive_autotuning =
+      GetDebugOptionsForTest();
+  debug_options_with_exhaustive_autotuning.set_xla_gpu_exhaustive_tiling_search(
+      true);
+
+  TF_ASSERT_OK_AND_ASSIGN(
+      const std::vector<TritonGemmConfig> exhaustive_ampere_configs,
+      GetPossibleMatmulAutotuneTritonConfigs(
+          *Cast<HloDotInstruction>(
+              module->entry_computation()->root_instruction()),
+          se::CudaComputeCapability::Ampere(), GetToolkitVersion(),
+          debug_options_with_exhaustive_autotuning));
+  for (const auto& config : exhaustive_ampere_configs) {
+    // We do not tune the number of CTAs on Ampere...
+    EXPECT_EQ(config.num_ctas, 1);
+  }
+
+  TF_ASSERT_OK_AND_ASSIGN(
+      const std::vector<TritonGemmConfig> exhaustive_hopper_configs,
+      GetPossibleMatmulAutotuneTritonConfigs(
+          *Cast<HloDotInstruction>(
+              module->entry_computation()->root_instruction()),
+          se::CudaComputeCapability::Hopper(), GetToolkitVersion(),
+          debug_options_with_exhaustive_autotuning));
+  absl::flat_hash_set<int> config_num_ctas;
+  for (const auto& config : exhaustive_hopper_configs) {
+    // ... but we do on Hopper...
+    config_num_ctas.insert(config.num_ctas);
+  }
+  EXPECT_GT(config_num_ctas.size(), 1);
+
+  DebugOptions debug_options_without_exhaustive_autotuning =
+      GetDebugOptionsForTest();
+  debug_options_without_exhaustive_autotuning
+      .set_xla_gpu_exhaustive_tiling_search(false);
+
+  TF_ASSERT_OK_AND_ASSIGN(
+      const std::vector<TritonGemmConfig> hopper_configs,
+      GetPossibleMatmulAutotuneTritonConfigs(
+          *Cast<HloDotInstruction>(
+              module->entry_computation()->root_instruction()),
+          se::CudaComputeCapability::Hopper(), GetToolkitVersion(),
+          debug_options_without_exhaustive_autotuning));
+  for (const auto& config : hopper_configs) {
+    // ... except if exhaustive autotuning is disabled.
+    EXPECT_EQ(config.num_ctas, 1);
+  }
+}
 
 TEST_F(GemmFusionAutotunerTest, SplitKFLoatNormalization) {
   if (!GetCudaComputeCapability().IsAtLeastHopper()) {
