@@ -42,6 +42,7 @@ def repo():
         build_file = "//third_party/absl:com_google_absl.BUILD",
         system_build_file = "//third_party/absl:system.BUILD",
         system_link_files = SYS_LINKS,
+	patch_file = ["//third_party/absl:absl_neon.patch"],
         strip_prefix = "abseil-cpp-{commit}".format(commit = ABSL_COMMIT),
         urls = tf_mirror_urls("https://github.com/abseil/abseil-cpp/archive/{commit}.tar.gz".format(commit = ABSL_COMMIT)),
     )
