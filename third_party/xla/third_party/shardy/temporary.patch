@@ -1143,10 +1143,10 @@ index a9705ce..1e2ad3d 100644
    mlir::func::registerAllExtensions(dialects);
  
 diff --git a/third_party/llvm/generated.patch b/third_party/llvm/generated.patch
-index de92cb4..1bea535 100644
+index de92cb4..509398d 100644
 --- a/third_party/llvm/generated.patch
 +++ b/third_party/llvm/generated.patch
-@@ -1,4095 +1,78 @@
+@@ -1,4095 +1 @@
  Auto generated patch. Do not edit or delete it, even if empty.
 -diff -ruN --strip-trailing-cr a/llvm/docs/NVPTXUsage.rst b/llvm/docs/NVPTXUsage.rst
 ---- a/llvm/docs/NVPTXUsage.rst
@@ -1154,11 +1154,7 @@ index de92cb4..1bea535 100644
 -@@ -127,6 +127,69 @@
 - NVPTX Intrinsics
 - ================
-+diff -ruN --strip-trailing-cr a/mlir/examples/toy/Ch1/include/toy/Lexer.h b/mlir/examples/toy/Ch1/include/toy/Lexer.h
-+--- a/mlir/examples/toy/Ch1/include/toy/Lexer.h
-++++ b/mlir/examples/toy/Ch1/include/toy/Lexer.h
-+@@ -15,6 +15,7 @@
-  
+- 
 -+Address Space Conversion
 -+------------------------
 -+
@@ -1224,18 +1220,14 @@ index de92cb4..1bea535 100644
 -+
 - Reading PTX Special Registers
 - -----------------------------
-+ #include "llvm/ADT/StringRef.h"
-  
+- 
 -diff -ruN --strip-trailing-cr a/llvm/docs/ReleaseNotes.rst b/llvm/docs/ReleaseNotes.rst
 ---- a/llvm/docs/ReleaseNotes.rst
 -+++ b/llvm/docs/ReleaseNotes.rst
 -@@ -63,24 +63,6 @@
 -   * ``llvm.nvvm.bitcast.d2ll``
 -   * ``llvm.nvvm.bitcast.ll2d``
-++#include <cstdlib>
-+ #include <memory>
-+ #include <string>
-  
+- 
 --* Remove the following intrinsics which can be replaced with a funnel-shift:
 --
 --  * ``llvm.nvvm.rotate.b32``
@@ -1256,11 +1248,7 @@ index de92cb4..1bea535 100644
 --
 - Changes to LLVM infrastructure
 - ------------------------------
-+diff -ruN --strip-trailing-cr a/mlir/examples/toy/Ch2/include/toy/Lexer.h b/mlir/examples/toy/Ch2/include/toy/Lexer.h
-+--- a/mlir/examples/toy/Ch2/include/toy/Lexer.h
-++++ b/mlir/examples/toy/Ch2/include/toy/Lexer.h
-+@@ -15,6 +15,7 @@
-  
+- 
 -diff -ruN --strip-trailing-cr a/llvm/include/llvm/IR/IntrinsicsNVVM.td b/llvm/include/llvm/IR/IntrinsicsNVVM.td
 ---- a/llvm/include/llvm/IR/IntrinsicsNVVM.td
 -+++ b/llvm/include/llvm/IR/IntrinsicsNVVM.td
@@ -1284,17 +1272,13 @@ index de92cb4..1bea535 100644
 -+//   * llvm.nvvm.bitcast.i2f  --> ibid.
 -+//   * llvm.nvvm.bitcast.d2ll --> ibid.
 -+//   * llvm.nvvm.bitcast.ll2d --> ibid.
-+ #include "llvm/ADT/StringRef.h"
-  
+- 
 - def llvm_global_ptr_ty  : LLVMQualPointerType<1>;  // (global)ptr
 - def llvm_shared_ptr_ty  : LLVMQualPointerType<3>;  // (shared)ptr
 -@@ -1610,6 +1602,40 @@
 -   [IntrReadMem, IntrArgMemOnly, IntrNoCallback, IntrWillReturn, NoCapture<ArgIndex<0>>],
 -   "llvm.nvvm.ldg.global.p">;
-++#include <cstdlib>
-+ #include <memory>
-+ #include <string>
-  
+- 
 -+// Use for generic pointers
 -+// - These intrinsics are used to convert address spaces.
 -+// - The input pointer and output pointer must have the same type, except for
@@ -1335,11 +1319,7 @@ index de92cb4..1bea535 100644
 -@@ -4453,6 +4479,22 @@
 -               "llvm.nvvm.sust.p.3d.v4i32.trap">,
 -     ClangBuiltin<"__nvvm_sust_p_3d_v4i32_trap">;
-+diff -ruN --strip-trailing-cr a/mlir/examples/toy/Ch3/include/toy/Lexer.h b/mlir/examples/toy/Ch3/include/toy/Lexer.h
-+--- a/mlir/examples/toy/Ch3/include/toy/Lexer.h
-++++ b/mlir/examples/toy/Ch3/include/toy/Lexer.h
-+@@ -15,6 +15,7 @@
-  
+- 
 -+
 -+def int_nvvm_rotate_b32
 -+  : DefaultAttrsIntrinsic<[llvm_i32_ty], [llvm_i32_ty, llvm_i32_ty],
@@ -1381,15 +1361,11 @@ index de92cb4..1bea535 100644
 --            Name.starts_with(".to.gen");
 -       else
 -         Expand = false;
-+ #include "llvm/ADT/StringRef.h"
-  
+- 
 -@@ -2271,117 +2258,6 @@
 -   }
 - }
-++#include <cstdlib>
-+ #include <memory>
-+ #include <string>
-  
+- 
 --static Value *upgradeNVVMIntrinsicCall(StringRef Name, CallBase *CI,
 --                                       Function *F, IRBuilder<> &Builder) {
 --  Value *Rep = nullptr;
@@ -1505,11 +1481,7 @@ index de92cb4..1bea535 100644
 -                                       IRBuilder<> &Builder) {
 -   LLVMContext &C = F->getContext();
 -@@ -4332,8 +4208,85 @@
-+diff -ruN --strip-trailing-cr a/mlir/examples/toy/Ch4/include/toy/Lexer.h b/mlir/examples/toy/Ch4/include/toy/Lexer.h
-+--- a/mlir/examples/toy/Ch4/include/toy/Lexer.h
-++++ b/mlir/examples/toy/Ch4/include/toy/Lexer.h
-+@@ -15,6 +15,7 @@
-  
+- 
 -     if (!IsX86 && Name == "stackprotectorcheck") {
 -       Rep = nullptr;
 -+    } else if (IsNVVM && (Name == "abs.i" || Name == "abs.ll")) {
@@ -1604,31 +1576,22 @@ index de92cb4..1bea535 100644
 - static const LLT S512 = LLT::scalar(512);
 --static const LLT S1024 = LLT::scalar(1024);
 - static const LLT MaxScalar = LLT::scalar(MaxRegisterSize);
-+ #include "llvm/ADT/StringRef.h"
-  
+- 
 - static const LLT V2S8 = LLT::fixed_vector(2, 8);
 -@@ -333,8 +332,8 @@
 - static const LLT V2S128 = LLT::fixed_vector(2, 128);
 - static const LLT V4S128 = LLT::fixed_vector(4, 128);
-++#include <cstdlib>
-+ #include <memory>
-+ #include <string>
-  
+- 
 --static std::initializer_list<LLT> AllScalarTypes = {
 --    S32, S64, S96, S128, S160, S224, S256, S512, S1024};
 -+static std::initializer_list<LLT> AllScalarTypes = {S32,  S64,  S96,  S128,
 -+                                                    S160, S224, S256, S512};
-+diff -ruN --strip-trailing-cr a/mlir/examples/toy/Ch5/include/toy/Lexer.h b/mlir/examples/toy/Ch5/include/toy/Lexer.h
-+--- a/mlir/examples/toy/Ch5/include/toy/Lexer.h
-++++ b/mlir/examples/toy/Ch5/include/toy/Lexer.h
-+@@ -15,6 +15,7 @@
-  
+- 
 - static std::initializer_list<LLT> AllS16Vectors{
 -     V2S16, V4S16, V6S16, V8S16, V10S16, V12S16, V16S16, V2S128, V4S128};
 -@@ -890,11 +889,10 @@
 -     .clampScalar(0, S16, S64);
-+ #include "llvm/ADT/StringRef.h"
-  
+- 
 -   getActionDefinitionsBuilder({G_IMPLICIT_DEF, G_FREEZE})
 --      .legalIf(isRegisterClassType(0))
 -+      .legalIf(isRegisterType(0))
@@ -1645,26 +1608,18 @@ index de92cb4..1bea535 100644
 -@@ -174,6 +174,10 @@
 - def hasSHFL : Predicate<"!(Subtarget->getSmVersion() >= 70"
 -                           "&& Subtarget->getPTXVersion() >= 64)">;
-++#include <cstdlib>
-+ #include <memory>
-+ #include <string>
-  
+- 
 -+def useShortPtrLocal : Predicate<"TM.is64Bit() && TM.getPointerSizeInBits(ADDRESS_SPACE_LOCAL) == 32">;
 -+def useShortPtrShared : Predicate<"TM.is64Bit() && TM.getPointerSizeInBits(ADDRESS_SPACE_SHARED) == 32">;
 -+def useShortPtrConst : Predicate<"TM.is64Bit() && TM.getPointerSizeInBits(ADDRESS_SPACE_CONST) == 32">;
 -+
 - def useFP16Math: Predicate<"Subtarget->allowFP16Math()">;
 - def hasBF16Math: Predicate<"Subtarget->hasBF16Math()">;
-+diff -ruN --strip-trailing-cr a/mlir/examples/toy/Ch6/include/toy/Lexer.h b/mlir/examples/toy/Ch6/include/toy/Lexer.h
-+--- a/mlir/examples/toy/Ch6/include/toy/Lexer.h
-++++ b/mlir/examples/toy/Ch6/include/toy/Lexer.h
-+@@ -15,6 +15,7 @@
-  
+- 
 -@@ -1661,6 +1665,167 @@
 -              "brev.b64 \t$dst, $a;",
 -              [(set Int64Regs:$dst, (bitreverse Int64Regs:$a))]>;
-+ #include "llvm/ADT/StringRef.h"
-  
+- 
 -+//
 -+// Rotate: Use ptx shf instruction if available.
 -+//
@@ -1826,20 +1781,13 @@ index de92cb4..1bea535 100644
 -+            "shf.r.clamp.b32 \t$dst, $lo, $hi, $amt;",
 -+            [(set Int32Regs:$dst,
 -+             (FUN_SHFR_CLAMP (i32 Int32Regs:$lo), (i32 Int32Regs:$hi), (i32 Int32Regs:$amt)))]>;
-++#include <cstdlib>
-+ #include <memory>
-+ #include <string>
-  
+- 
 - //
 - // BFE - bit-field extract
 -@@ -3492,42 +3657,6 @@
 - def: Pat<(v2i16 (scalar_to_vector (i16 Int16Regs:$a))),
 -          (CVT_u32_u16 Int16Regs:$a, CvtNONE)>;
-+diff -ruN --strip-trailing-cr a/mlir/examples/toy/Ch7/include/toy/Lexer.h b/mlir/examples/toy/Ch7/include/toy/Lexer.h
-+--- a/mlir/examples/toy/Ch7/include/toy/Lexer.h
-++++ b/mlir/examples/toy/Ch7/include/toy/Lexer.h
-+@@ -15,6 +15,7 @@
-  
+- 
 --//
 --// Funnel-Shift
 --//
@@ -1884,12 +1832,8 @@ index de92cb4..1bea535 100644
 -+++ b/llvm/lib/Target/NVPTX/NVPTXIntrinsics.td
 -@@ -2537,45 +2537,59 @@
 -   : VLDG_G_ELE_V4<"v4.f32 \t{{$dst1, $dst2, $dst3, $dst4}}, [$src];", Float32Regs>;
-+ #include "llvm/ADT/StringRef.h"
-  
-++#include <cstdlib>
-+ #include <memory>
-+ #include <string>
-  
+- 
+- 
 --multiclass NG_TO_G<string Str> {
 -+multiclass NG_TO_G<string Str, Intrinsic Intrin, Predicate ShortPtr> {
 -    def "" : NVPTXInst<(outs Int32Regs:$result), (ins Int32Regs:$src),
@@ -5299,7 +5243,7 @@ index de92cb4..1bea535 100644
 - ; CHECK-NEXT:.b8 6                                   // DW_AT_call_line
 - ; CHECK-NEXT:.b8 37                                  // DW_AT_call_column
 diff --git a/third_party/llvm/workspace.bzl b/third_party/llvm/workspace.bzl
-index af35fe7..ad9923c 100644
+index af35fe7..2084219 100644
 --- a/third_party/llvm/workspace.bzl
 +++ b/third_party/llvm/workspace.bzl
 @@ -4,8 +4,8 @@ load("//third_party:repo.bzl", "tf_http_archive")
@@ -5308,8 +5252,8 @@ index af35fe7..ad9923c 100644
      """Imports LLVM."""
 -    LLVM_COMMIT = "9830156f623c56062bf6df1b4c4b4bd8ab5bd57c"
 -    LLVM_SHA256 = "85bb9a61cfdaf0d3386890dc7b4bbaa17eecf4b70b60c314307f2ca3919b9035"
-+    LLVM_COMMIT = "6292f117c39b9fc72da4e40328eeeda2aa94a5f2"
-+    LLVM_SHA256 = "31f583de2e077f9289fc5efea74bd6e1a1694fda5f77f09472253cdc072f2e5e"
++    LLVM_COMMIT = "4852374135773b03c14ba2003be99ed1169dedf4"
++    LLVM_SHA256 = "144d3cc286c0362541c5aa550df6bb4bbfbceb2450c0c7a1f1ec20715552c184"
  
      tf_http_archive(
          name = name,
