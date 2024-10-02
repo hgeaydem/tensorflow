@@ -28,6 +28,7 @@ limitations under the License.
 #include "xla/client/xla_builder.h"
 #include "xla/client/xla_computation.h"
 #include "xla/pjrt/pjrt_client.h"
+#include "xla/pjrt/pjrt_compiler.h"
 #include "xla/service/hlo_parser.h"
 #include "xla/shape.h"
 #include "xla/shape_util.h"
@@ -484,6 +485,34 @@ TEST(PjRtClientTest, CopyToDeviceAsyncExternalCpuOnly) {
     EXPECT_TRUE(LiteralTestUtil::Equal(LiteralUtil::CreateR1<int32_t>(expected),
                                        *literal));
   }
+}
+
+TEST(PjRtClientTest, CreateViewOfUnalignedBufferReturnsErrorCpuOnly) {
+  TF_ASSERT_OK_AND_ASSIGN(auto client, GetClient());
+  ASSERT_GT(client->addressable_devices().size(), 1);
+
+  // Skip non-CPU platforms.
+  if (client->platform_id() != CpuId()) return;
+
+  std::vector<int32_t> data(5, 0);
+  auto* data_ptr = data.data();
+
+  // Pointer to the second element is always unaligned, because it's shifted by
+  // 4 bytes (size of int32_t) from the original pointer.
+  auto* unaligned_ptr = data_ptr + 1;
+
+  // Shape with a size smaller than the original data vector, because the
+  // 'unaligned_ptr' points to the second element.
+  Shape shape = ShapeUtil::MakeShape(S32, {4});
+
+  // Attempt to create a view of the unaligned buffer. Expect an error.
+  auto result = client->CreateViewOfDeviceBuffer(
+      unaligned_ptr, shape, client->addressable_devices()[0],
+      /*on_delete_callback=*/std::function<void()>());
+
+  ASSERT_FALSE(result.ok());
+  EXPECT_THAT(result.status().message(),
+              ::testing::HasSubstr("unaligned data"));
 }
 
 absl::StatusOr<std::unique_ptr<PjRtBuffer>> MakeFloatBuffer(
